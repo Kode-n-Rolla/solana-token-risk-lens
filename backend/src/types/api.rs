@@ -23,3 +23,9 @@ pub struct AnalyzeTokenResponse {
     pub chain: String,
     pub message: String,
 }
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ApiErrorResponse {
+    pub error: String,
+}

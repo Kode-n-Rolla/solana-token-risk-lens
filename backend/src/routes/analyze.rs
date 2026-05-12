@@ -1,17 +1,24 @@
-use axum::{extract::Json, http::StatusCode};
+use axum::{Json, http::StatusCode};
 
-use crate::types::api::{
-    AnalyzeTokenRequest,
-    AnalyzeTokenResponse,
+use crate::{
+    types::api::{
+        AnalyzeTokenRequest,
+        AnalyzeTokenResponse,
+        ApiErrorResponse,
+    },
+    utils::validation::validate_analyze_token_requst,
 };
 
 
 pub async fn analyze_token(
     Json(payload): Json<AnalyzeTokenRequest>,
-) -> Result<Json<AnalyzeTokenResponse>, StatusCode> {
-    if payload.api_key.trim().is_empty() || payload.token_address.trim().is_empty() {
-        return Err(StatusCode::BAD_REQUEST);
-    }
+) -> Result<Json<AnalyzeTokenResponse>, (StatusCode, Json<ApiErrorResponse>)> {
+    validate_analyze_token_requst(&payload).map_err(|err| {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiErrorResponse { error: err.to_string(), }),
+        )
+    })?;
 
     let response = AnalyzeTokenResponse {
         token_address: payload.api_key,
