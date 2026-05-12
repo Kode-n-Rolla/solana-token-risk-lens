@@ -3,7 +3,7 @@ use crate::types::api::AnalyzeTokenRequest;
 const MIN_HOLDER_LIMIT: u32 = 1;
 const MAX_HOLDER_LIMIT: u32 = 100;
 
-pub fn validate_analyze_token_requst(request: &AnalyzeTokenRequest) -> Result<(), &'static str> {
+pub fn validate_analyze_token_request(request: &AnalyzeTokenRequest) -> Result<(), &'static str> {
     if request.api_key.trim().is_empty() {
         return Err("Birdeye API key is required");
     };

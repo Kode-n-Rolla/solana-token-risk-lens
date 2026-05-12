@@ -8,6 +8,9 @@ pub enum BirdeyeClientError {
     #[error("request to Birdeye failed: {0}")]
     Request(#[from] reqwest::Error),
 
-    #[error("Birdeye returned unsuccessful status: {0}")]
-    HttpStatus(reqwest::StatusCode),
+    #[error("Birdeye returned unsuccessful status for {endpoint}: {status}")]
+    HttpStatus {
+        endpoint: &'static str,
+        status: reqwest::StatusCode,
+    },
 }

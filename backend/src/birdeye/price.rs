@@ -32,7 +32,10 @@ impl BirdeyeClient {
             .await?;
 
         if !response.status().is_success() {
-            return Err(BirdeyeClientError::HttpStatus(response.status()));
+            return Err(BirdeyeClientError::HttpStatus {
+                endpoint: "price",
+                status: response.status(),
+            });
         }
 
         let price_respone = response.json::<BirdeyeResponse<PriceData>>().await?;

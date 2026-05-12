@@ -1,16 +1,14 @@
 use axum::{
-    extract::State,
-    Json,
-    http::StatusCode,
+    Json, extract::State, http::StatusCode, response
 };
 
 use crate::{
-    birdeye::errors::BirdeyeClientError,
+    birdeye::{errors::BirdeyeClientError, price},
     types::{
-        api::{AnalyzeTokenRequest, AnalyzeTokenResponse, ApiErrorResponse},
+        api::{AnalyzeTokenRequest, AnalyzeTokenResponse, ApiErrorResponse, DataSourceStatus},
         app::AppState,
     },
-    utils::validation::validate_analyze_token_requst,
+    utils::validation::validate_analyze_token_request,
 };
 
 
@@ -18,26 +16,71 @@ pub async fn analyze_token(
     State(app_state): State<AppState>,
     Json(payload): Json<AnalyzeTokenRequest>,
 ) -> Result<Json<AnalyzeTokenResponse>, (StatusCode, Json<ApiErrorResponse>)> {
-    validate_analyze_token_requst(&payload).map_err(validatation_error_response)?;
+    validate_analyze_token_request(&payload).map_err(validatation_error_response)?;
 
-    let price_response = app_state
+    let price_result = app_state
         .birdeye_client
         .get_price(&payload.api_key, &payload.token_address)
-        .await
-        .map_err(birdeye_error_response)?;
+        .await;
 
-    let message = match price_response.data {
-        Some(price_data) => format!(
-            "price fetched. value={:?}, liquidity={:?}",
-            price_data.value, price_data.liquidity
-        ),
-        None => "Birdeye returned no price data".to_string(),
+    let overview_result = app_state
+        .birdeye_client
+        .get_overview(&payload.api_key, &payload.token_address)
+        .await;
+
+    let mut data_sources = Vec::new();
+
+    let price_data = match price_result {
+        Ok(response) => {
+            data_sources.push(DataSourceStatus {
+                source: "price".to_string(),
+                status: "ok".to_string(),
+                detail: None,
+            });
+
+            response.data
+        }
+        Err(error) => {
+            data_sources.push(data_source_error_status("price", &error));
+            None
+        }
     };
+
+    let overview_data = match overview_result {
+        Ok(response) => {
+            data_sources.push(DataSourceStatus {
+                source: "overview".to_string(),
+                status: "ok".to_string(),
+                detail: None,
+            });
+
+            response.data
+        }
+        Err(error) => {
+            data_sources.push(data_source_error_status("overview", &error));
+            None
+        }
+    };
+
+    if price_data.is_none() && overview_data.is_none() {
+        return Err((
+            StatusCode::BAD_GATEWAY,
+            Json(ApiErrorResponse {
+                error: "Birdeye data was unavailable for this token request".to_string(),
+            }),
+        ));
+    }
 
     let response = AnalyzeTokenResponse {
         token_address: payload.token_address,
         chain: payload.chain,
-        message
+        name: overview_data.as_ref().and_then(|data| data.name.clone()),
+        symbol: overview_data.as_ref().and_then(|data| data.symbol.clone()),
+        logo_uri: overview_data.as_ref().and_then(|data| data.logo_uri.clone()),
+        price: price_data.as_ref().and_then(|data| data.value),
+        liquidity: price_data.as_ref().and_then(|data| data.liquidity),
+        data_sources,
+        message: "Basic token data fetched from Birdeye".to_string(),
     };
 
     Ok(Json(response))
@@ -50,6 +93,32 @@ fn validatation_error_response(message: &'static str) -> (StatusCode, Json<ApiEr
     )
 }
 
+fn data_source_error_status(source: &str, error: &BirdeyeClientError) -> DataSourceStatus {
+    DataSourceStatus {
+        source: source.to_string(),
+        status: "error".to_string(),
+        detail: Some(format_birdeye_error(error)),
+    }
+}
+
+fn format_birdeye_error(error: &BirdeyeClientError) -> String {
+    match error {
+        BirdeyeClientError::InvalidApiKeyHeader => {
+            "The provided API key could not be used in the Birdeye request".to_string()
+        }
+        BirdeyeClientError::HttpStatus { endpoint, status } => {
+            format!(
+                "Birdeye endpoint {} returned an unsuccessful status: {}",
+                endpoint, status
+            )
+        }
+        BirdeyeClientError::Request(_) => {
+            "Failed to communicate with Birdeye or parse its response".to_string()
+        }
+    }        
+}
+
+/*
 fn birdeye_error_response(error: BirdeyeClientError) -> (StatusCode, Json<ApiErrorResponse>) {
     match error {
         BirdeyeClientError::InvalidApiKeyHeader => (
@@ -58,10 +127,10 @@ fn birdeye_error_response(error: BirdeyeClientError) -> (StatusCode, Json<ApiErr
                 error: "The provided API key could not be used in the Birdeye request".to_string(),
             }),
         ),
-        BirdeyeClientError::HttpStatus(status) => (
+        BirdeyeClientError::HttpStatus {endpoint, status} => (
             StatusCode::BAD_GATEWAY,
             Json(ApiErrorResponse {
-                error: format!("Birdeye returned an unsuccessful status {}", status)
+                error: format!("Birdeye endpoint {} returned an unsuccessful status {}", endpoint, status)
             }),
         ),
         BirdeyeClientError::Request(_) => (
@@ -71,4 +140,4 @@ fn birdeye_error_response(error: BirdeyeClientError) -> (StatusCode, Json<ApiErr
             }),
         ),
     }
-}
+} */

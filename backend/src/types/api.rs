@@ -21,7 +21,21 @@ pub struct AnalyzeOptions {
 pub struct AnalyzeTokenResponse {
     pub token_address: String,
     pub chain: String,
+    pub name: Option<String>,
+    pub symbol: Option<String>,
+    pub logo_uri: Option<String>,
+    pub price: Option<f64>,
+    pub liquidity: Option<f64>,
+    pub data_sources: Vec<DataSourceStatus>,
     pub message: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DataSourceStatus {
+    pub source: String,
+    pub status: String,
+    pub detail: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
