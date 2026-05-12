@@ -80,7 +80,7 @@ pub async fn analyze_token(
         price: price_data.as_ref().and_then(|data| data.value),
         liquidity: price_data.as_ref().and_then(|data| data.liquidity),
         data_sources,
-        message: "Basic token data fetched from Birdeye".to_string(),
+        message: "Basic token data fetched from available Birdeye sources".to_string(),
     };
 
     Ok(Json(response))
