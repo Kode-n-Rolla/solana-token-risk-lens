@@ -1,7 +1,7 @@
 use axum::{
+    extract::State,
     Json,
     http::StatusCode,
-    extract::State,
 };
 
 use crate::{
@@ -24,13 +24,31 @@ pub async fn analyze_token(
         )
     })?;
 
-    let response = AnalyzeTokenResponse {
-        token_address: payload.api_key,
-        chain: payload.chain,
-        message: format!(
-            "Analysis pipeline is not implemented yet. Birdeye base url: {}",
-            app_state.birdeye_client.base_url()
+    let price_response = app_state
+        .birdeye_client
+        .get_price(&payload.api_key, &payload.token_address)
+        .await
+        .map_err(|_| {
+            (
+                StatusCode::BAD_REQUEST,
+                Json(ApiErrorResponse{
+                    error: "Failed to fetch price data from Birdeye".to_string(),
+                })
+            )
+        })?;
+
+    let message = match price_response.data {
+        Some(price_data) => format!(
+            "price fetched. value={:?}, liquidity={:?}",
+            price_data.value, price_data.liquidity
         ),
+        None => "Birdeye returned no price data".to_string(),
+    };
+
+    let response = AnalyzeTokenResponse {
+        token_address: payload.token_address,
+        chain: payload.chain,
+        message
     };
 
     Ok(Json(response))
