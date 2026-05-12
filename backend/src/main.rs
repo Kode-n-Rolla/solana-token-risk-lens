@@ -1,3 +1,4 @@
+mod birdeye;
 mod routes;
 mod types;
 mod utils;
@@ -9,17 +10,21 @@ use axum::{
 
 use tower_http::cors::CorsLayer;
 
-use crate::routes::{
-    analyze::analyze_token,
-    health::health,
+use crate::{
+    birdeye::client::BirdeyeClient,
+    routes::{analyze::analyze_token, health::health},
 };
 
 #[tokio::main]
 async fn main() {
+    let birdeye_client = BirdeyeClient::new(); 
+
     let app = Router::new()
         .route("/health", get(health))
         .route("/api/analyze-token", post(analyze_token))
         .layer(CorsLayer::permissive());
+
+    println!("Birdeye base url: {}", birdeye_client.base_url());
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3001")
         .await
