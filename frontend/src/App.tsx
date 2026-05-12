@@ -1,27 +1,7 @@
 import { useState } from "react";
 import "./App.css";
-
-type DataSourceStatus = {
-  source: string;
-  status: string;
-  detail: string | null;
-};
-
-type AnalyzeTokenResponse = {
-  tokenAddress: string;
-  chain: string;
-  name: string | null;
-  symbol: string | null;
-  logoUri: string | null;
-  price: number | null;
-  liquidity: number | null;
-  dataSources: DataSourceStatus[];
-  message: string;
-};
-
-type ApiErrorResponse = {
-  error: string;
-};
+import { analyzeToken } from "./lib/api";
+import type { AnalyzeTokenResponse } from "./types/risk";
 
 function App() {
   const [apiKey, setApiKey] = useState("");
@@ -37,28 +17,7 @@ function App() {
     setReport(null);
 
     try {
-      const response = await fetch("http://localhost:3001/api/analyze-token", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          apiKey,
-          tokenAddress,
-          chain: "solana",
-          options: {
-            includeHolders: true,
-            holderLimit: 100,
-          },
-        }),
-      });
-
-      if (!response.ok) {
-        const errorBody = (await response.json()) as ApiErrorResponse;
-        throw new Error(errorBody.error || "Request failed");
-      }
-
-      const result = (await response.json()) as AnalyzeTokenResponse;
+      const result = await analyzeToken({ apiKey, tokenAddress });
       setReport(result);
     } catch (err) {
       if (err instanceof Error) {
@@ -174,7 +133,7 @@ function App() {
               {report.dataSources.map((source) => (
                 <li key={source.source}>
                   <strong>{source.source}</strong>: {source.status}
-                  {source.detail ? ` — ${source.detail}` : ""}
+                  {source.detail ? ` - ${source.detail}` : ""}
                 </li>
               ))}
             </ul>
