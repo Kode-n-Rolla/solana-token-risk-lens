@@ -1,29 +1,10 @@
 use axum::{extract::Json, http::StatusCode};
-use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct AnalyzeTokenRequest {
-    pub api_key: String,
-    pub token_address: String,
-    pub chain: String,
-    pub options: AnalyzeOptions,
-}
+use crate::types::api::{
+    AnalyzeTokenRequest,
+    AnalyzeTokenResponse,
+};
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct AnalyzeOptions {
-    pub include_holders: bool,
-    pub holder_limit: u32,
-}
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct AnalyzeTokenResponse {
-    pub token_address: String,
-    pub chain: String,
-    pub message: String,
-}
 
 pub async fn analyze_token(
     Json(payload): Json<AnalyzeTokenRequest>,

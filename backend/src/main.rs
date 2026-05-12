@@ -1,4 +1,5 @@
 mod routes;
+mod types;
 
 use axum::{
     routing::{get,post},
