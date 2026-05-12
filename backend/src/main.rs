@@ -1,14 +1,13 @@
+mod routes;
+
 use axum::{
     routing::get,
-    Json, Router,
+    Router,
 };
-use serde::Serialize;
+
 use tower_http::cors::CorsLayer;
 
-#[derive(Serialize)]
-struct HealthResponse {
-    status: &'static str,
-}
+use crate::routes::health::health;
 
 #[tokio::main]
 async fn main() {
@@ -25,8 +24,4 @@ async fn main() {
     axum::serve(listener, app)
         .await
         .expect("server failed");
-}
-
-async fn health() -> Json<HealthResponse> {
-    Json(HealthResponse { status: "ok" })
 }
