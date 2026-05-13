@@ -17,5 +17,14 @@ export type AnalyzeTokenResponse = {
 };
 
 export type ApiErrorResponse = {
-    error: string;
+  error: string;
+};
+
+export type SourceProbeResponse = {
+  source: string;
+  status: string;
+  detail: string | null;
+  tokenAddress: string;
+  chain: string;
+  message: string;
 };
