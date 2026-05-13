@@ -6,6 +6,7 @@ use tokio::time::{sleep, Duration};
 
 use crate::{
     birdeye::errors::BirdeyeClientError,
+    scoring::holders::calculate_holder_concentration,
     types::{
         api::{
             AnalyzeTokenRequest, AnalyzeTokenResponse, ApiErrorResponse, DataSourceStatus,
@@ -138,19 +139,32 @@ pub async fn probe_holders(
 ) -> Result<Json<HoldersProbeResponse>, (StatusCode, Json<ApiErrorResponse>)> {
     validate_analyze_token_request(&payload).map_err(validatation_error_response)?;
 
-    let result = app_state
+    let overview_result = app_state
+        .birdeye_client
+        .get_overview(&payload.api_key, &payload.token_address)
+        .await;
+
+    let holders_result = app_state
         .birdeye_client
         .get_holders(
             &payload.api_key,
             &payload.token_address,
-            payload.options.holder_limit
+            payload.options.holder_limit,
         )
         .await;
 
-    let response = match result {
-        Ok(response) => {
-            let items = response.data.map(|data| data.items).unwrap_or_default();
-            let top_holder = items.first();
+    let response = match (overview_result, holders_result) {
+        (Ok(overview_response), Ok(holders_response)) => {
+            let holders = holders_response.data.map(|data| data.items).unwrap_or_default();
+            let top_holder = holders.first();
+
+            let concentration = overview_response
+                .data
+                .as_ref()
+                .and_then(|overview| overview.total_supply)
+                .and_then(|total_supply| {
+                    calculate_holder_concentration(&holders, total_supply)
+                });
 
             HoldersProbeResponse {
                 source: "holders".to_string(),
@@ -158,13 +172,33 @@ pub async fn probe_holders(
                 detail: None,
                 token_address: payload.token_address,
                 chain: payload.chain,
-                holder_count: items.len(),
+                holder_count: holders.len(),
                 top_holder_owner: top_holder.map(|holder| holder.owner.clone()),
                 top_holder_ui_amount: top_holder.map(|holder| holder.ui_amount),
-                message: "Standalone holders probe completed".to_string()
+                top1_percent: concentration.as_ref().map(|metrics| metrics.top1_percent),
+                top5_percent: concentration.as_ref().map(|metrics| metrics.top5_percent),
+                top10_percent: concentration.as_ref().map(|metrics| metrics.top10_percent),
+                message: "Standalone holders probe completed".to_string(),
             }
         }
-        Err(error) => HoldersProbeResponse {
+        (Err(error), _) => HoldersProbeResponse {
+            source: "holders".to_string(),
+            status: "error".to_string(),
+            detail: Some(format!(
+                "Overview request failed before concentration analysis: {}",
+                format_birdeye_error(&error)
+            )),
+            token_address: payload.token_address,
+            chain: payload.chain,
+            holder_count: 0,
+            top_holder_owner: None,
+            top_holder_ui_amount: None,
+            top1_percent: None,
+            top5_percent: None,
+            top10_percent: None,
+            message: "Standalone holders probe completed".to_string(),
+        },
+        (_, Err(error)) => HoldersProbeResponse {
             source: "holders".to_string(),
             status: "error".to_string(),
             detail: Some(format_birdeye_error(&error)),
@@ -173,12 +207,16 @@ pub async fn probe_holders(
             holder_count: 0,
             top_holder_owner: None,
             top_holder_ui_amount: None,
+            top1_percent: None,
+            top5_percent: None,
+            top10_percent: None,
             message: "Standalone holders probe completed".to_string(),
-        }
+        },
     };
 
     Ok(Json(response))
 }
+
 
 fn validatation_error_response(message: &'static str) -> (StatusCode, Json<ApiErrorResponse>) {
     (

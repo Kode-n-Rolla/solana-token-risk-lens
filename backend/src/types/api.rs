@@ -66,5 +66,8 @@ pub struct HoldersProbeResponse {
     pub holder_count: usize,
     pub top_holder_owner: Option<String>,
     pub top_holder_ui_amount: Option<f64>,
+    pub top1_percent: Option<f64>,
+    pub top5_percent: Option<f64>,
+    pub top10_percent: Option<f64>,
     pub message: String,
 }

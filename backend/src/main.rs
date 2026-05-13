@@ -1,5 +1,6 @@
 mod birdeye;
 mod routes;
+mod scoring;
 mod types;
 mod utils;
 

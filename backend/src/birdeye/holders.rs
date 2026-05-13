@@ -44,10 +44,7 @@ impl BirdeyeClient {
             });
         }
 
-        //let holders_response = response.json::<BirdeyeResponse<HolderData>>().await?;
-        let raw_text = response.text().await?;
-        println!("holders raw response: {}", raw_text);
-        let holders_response = serde_json::from_str::<BirdeyeResponse<HolderData>>(&raw_text)?;
+        let holders_response = response.json::<BirdeyeResponse<HolderData>>().await?;
 
         Ok(holders_response)
     }
