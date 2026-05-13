@@ -12,6 +12,7 @@ use crate::{
         holders_risk::score_holder_concentration,
         liquidity_risk::score_liquidity_risk,
         momentum_risk::score_momentum_risk,
+        summary::{calculate_risk_index, risk_level_from_score},
     },
     types::{
         api::{
@@ -144,8 +145,17 @@ pub async fn analyze_token(
         }
         _ => None,
     };
-
+    
     let holder_risk = holder_metrics.as_ref().map(score_holder_concentration);
+
+    let risk_index = calculate_risk_index(
+        holder_risk.as_ref(),
+        &liquidity_risk,
+        &momentum_risk,
+        &context_risk,
+    );
+
+    let risk_level = risk_level_from_score(risk_index);
 
     let response = AnalyzeTokenResponse {
         token_address: payload.token_address,
@@ -155,6 +165,8 @@ pub async fn analyze_token(
         logo_uri: overview_data.as_ref().and_then(|data| data.logo_uri.clone()),
         price: price_data.as_ref().and_then(|data| data.value),
         liquidity,
+        risk_index,
+        risk_level,
         holder_metrics,
         holder_risk,
         liquidity_risk,

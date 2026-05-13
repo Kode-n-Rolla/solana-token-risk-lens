@@ -31,6 +31,8 @@ pub struct AnalyzeTokenResponse {
     pub logo_uri: Option<String>,
     pub price: Option<f64>,
     pub liquidity: Option<f64>,
+    pub risk_index: u8,
+    pub risk_level: String,
     pub holder_metrics: Option<HolderConcentrationMetrics>,
     pub holder_risk: Option<RiskComponent>,
     pub liquidity_risk: RiskComponent,
