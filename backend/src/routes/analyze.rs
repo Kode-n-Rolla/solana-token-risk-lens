@@ -6,7 +6,10 @@ use tokio::time::{sleep, Duration};
 
 use crate::{
     birdeye::errors::BirdeyeClientError,
-    scoring::holders::calculate_holder_concentration,
+    scoring::{
+        holders::calculate_holder_concentration,
+        holders_risk::score_holder_concentration,
+    },
     types::{
         api::{
             AnalyzeTokenRequest, AnalyzeTokenResponse, ApiErrorResponse, DataSourceStatus,
@@ -166,6 +169,8 @@ pub async fn probe_holders(
                     calculate_holder_concentration(&holders, total_supply)
                 });
 
+            let risk_component = concentration.as_ref().map(score_holder_concentration);
+
             HoldersProbeResponse {
                 source: "holders".to_string(),
                 status: "ok".to_string(),
@@ -178,6 +183,7 @@ pub async fn probe_holders(
                 top1_percent: concentration.as_ref().map(|metrics| metrics.top1_percent),
                 top5_percent: concentration.as_ref().map(|metrics| metrics.top5_percent),
                 top10_percent: concentration.as_ref().map(|metrics| metrics.top10_percent),
+                risk_component,
                 message: "Standalone holders probe completed".to_string(),
             }
         }
@@ -196,6 +202,7 @@ pub async fn probe_holders(
             top1_percent: None,
             top5_percent: None,
             top10_percent: None,
+            risk_component: None,
             message: "Standalone holders probe completed".to_string(),
         },
         (_, Err(error)) => HoldersProbeResponse {
@@ -210,6 +217,7 @@ pub async fn probe_holders(
             top1_percent: None,
             top5_percent: None,
             top10_percent: None,
+            risk_component: None,
             message: "Standalone holders probe completed".to_string(),
         },
     };

@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::types::risk::RiskComponent;
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AnalyzeTokenRequest {
@@ -69,5 +71,6 @@ pub struct HoldersProbeResponse {
     pub top1_percent: Option<f64>,
     pub top5_percent: Option<f64>,
     pub top10_percent: Option<f64>,
+    pub risk_component: Option<RiskComponent>,
     pub message: String,
 }
