@@ -11,7 +11,7 @@ pub struct BirdeyeResponse<T> {
 #[serde(rename_all = "camelCase")]
 pub struct PriceData {
     pub value: Option<f64>,
-    pub update_unix_time: Option<f64>,
+    pub update_unix_time: Option<i64>,
     pub update_human_time: Option<String>,
     pub price_change_24h: Option<f64>,
     pub price_in_native: Option<f64>,
@@ -31,7 +31,7 @@ pub struct OverviewExtensions {
 #[serde(rename_all = "camelCase")]
 pub struct OverviewData {
     pub address: Option<String>,
-    pub decimal: Option<u8>,
+    pub decimals: Option<u8>,
     pub symbol: Option<String>,
     pub name: Option<String>,
     pub market_cap: Option<f64>,

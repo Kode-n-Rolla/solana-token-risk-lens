@@ -7,6 +7,7 @@ use tokio::time::{sleep, Duration};
 use crate::{
     birdeye::errors::BirdeyeClientError,
     scoring::{
+        context_risk::score_context_risk,
         holders::calculate_holder_concentration,
         holders_risk::score_holder_concentration,
         liquidity_risk::score_liquidity_risk,
@@ -116,7 +117,7 @@ pub async fn analyze_token(
     let liquidity_risk = score_liquidity_risk(liquidity, price_change_24h_percent);
 
     let momentum_risk = score_momentum_risk(
-    overview_data
+        overview_data
         .as_ref()
         .and_then(|data| data.price_change_1h_percent),
     overview_data
@@ -126,7 +127,13 @@ pub async fn analyze_token(
         .as_ref()
         .and_then(|data| data.price_change_24h_percent),
     liquidity,
-);
+    );
+
+    let context_risk = score_context_risk(
+        overview_data
+        .as_ref()
+        .and_then(|data| data.extensions.as_ref()),
+    );
 
     let holder_metrics = match (
         holders_data.as_ref(),
@@ -152,6 +159,7 @@ pub async fn analyze_token(
         holder_risk,
         liquidity_risk,
         momentum_risk,
+        context_risk,
         data_sources,
         message: "Token analysis completed using available Birdeye sources.".to_string(),
     };
