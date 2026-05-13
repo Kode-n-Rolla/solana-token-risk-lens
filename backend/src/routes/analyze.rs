@@ -10,6 +10,7 @@ use crate::{
         holders::calculate_holder_concentration,
         holders_risk::score_holder_concentration,
         liquidity_risk::score_liquidity_risk,
+        momentum_risk::score_momentum_risk,
     },
     types::{
         api::{
@@ -114,6 +115,19 @@ pub async fn analyze_token(
 
     let liquidity_risk = score_liquidity_risk(liquidity, price_change_24h_percent);
 
+    let momentum_risk = score_momentum_risk(
+    overview_data
+        .as_ref()
+        .and_then(|data| data.price_change_1h_percent),
+    overview_data
+        .as_ref()
+        .and_then(|data| data.price_change_4h_percent),
+    overview_data
+        .as_ref()
+        .and_then(|data| data.price_change_24h_percent),
+    liquidity,
+);
+
     let holder_metrics = match (
         holders_data.as_ref(),
         overview_data.as_ref().and_then(|data| data.total_supply),
@@ -137,6 +151,7 @@ pub async fn analyze_token(
         holder_metrics,
         holder_risk,
         liquidity_risk,
+        momentum_risk,
         data_sources,
         message: "Token analysis completed using available Birdeye sources.".to_string(),
     };

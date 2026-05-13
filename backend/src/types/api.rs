@@ -34,6 +34,7 @@ pub struct AnalyzeTokenResponse {
     pub holder_metrics: Option<HolderConcentrationMetrics>,
     pub holder_risk: Option<RiskComponent>,
     pub liquidity_risk: RiskComponent,
+    pub momentum_risk: RiskComponent,
     pub data_sources: Vec<DataSourceStatus>,
     pub message: String,
 }
