@@ -1,6 +1,8 @@
+use serde::Serialize;
+
 use crate::types::birdeye::HolderItem;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct HolderConcentrationMetrics {
     pub top1_percent: f64,
     pub top5_percent: f64,

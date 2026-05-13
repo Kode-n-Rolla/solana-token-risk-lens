@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-use crate::types::risk::RiskComponent;
+use crate::{
+    scoring::holders::HolderConcentrationMetrics,
+    types::risk::RiskComponent
+};
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -28,6 +31,9 @@ pub struct AnalyzeTokenResponse {
     pub logo_uri: Option<String>,
     pub price: Option<f64>,
     pub liquidity: Option<f64>,
+    pub holder_metrics: Option<HolderConcentrationMetrics>,
+    pub holder_risk: Option<RiskComponent>,
+    pub liquidity_risk: RiskComponent,
     pub data_sources: Vec<DataSourceStatus>,
     pub message: String,
 }

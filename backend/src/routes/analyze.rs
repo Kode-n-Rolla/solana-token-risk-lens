@@ -9,6 +9,7 @@ use crate::{
     scoring::{
         holders::calculate_holder_concentration,
         holders_risk::score_holder_concentration,
+        liquidity_risk::score_liquidity_risk,
     },
     types::{
         api::{
@@ -38,6 +39,13 @@ pub async fn analyze_token(
     let overview_result = app_state
         .birdeye_client
         .get_overview(&payload.api_key, &payload.token_address)
+        .await;
+
+    sleep(Duration::from_secs(2));
+    
+    let holders_result = app_state
+        .birdeye_client
+        .get_holders(&payload.api_key, &payload.token_address, payload.options.holder_limit)
         .await;
 
     let mut data_sources = Vec::new();
@@ -74,7 +82,23 @@ pub async fn analyze_token(
         }
     };
 
-    if price_data.is_none() && overview_data.is_none() {
+    let holders_data = match holders_result {
+        Ok(response) => {
+            data_sources.push(DataSourceStatus {
+                source: "holders".to_string(),
+                status: "ok".to_string(),
+                detail: None
+            });
+
+            response.data
+        }
+        Err(error) => {
+            data_sources.push(data_source_error_status("holders", &error));
+            None
+        }
+    };
+
+    if price_data.is_none() && overview_data.is_none() && holders_data.is_none() {
         return Err((
             StatusCode::BAD_GATEWAY,
             Json(ApiErrorResponse {
@@ -83,6 +107,25 @@ pub async fn analyze_token(
         ));
     }
 
+    let liquidity = overview_data.as_ref().and_then(|data| data.liquidity);
+    let price_change_24h_percent = overview_data
+        .as_ref()
+        .and_then(|data| data.price_change_24h_percent);
+
+    let liquidity_risk = score_liquidity_risk(liquidity, price_change_24h_percent);
+
+    let holder_metrics = match (
+        holders_data.as_ref(),
+        overview_data.as_ref().and_then(|data| data.total_supply),
+    ) {
+        (Some(holders_data), Some(total_supply)) => {
+            calculate_holder_concentration(&holders_data.items, total_supply)
+        }
+        _ => None,
+    };
+
+    let holder_risk = holder_metrics.as_ref().map(score_holder_concentration);
+
     let response = AnalyzeTokenResponse {
         token_address: payload.token_address,
         chain: payload.chain,
@@ -90,9 +133,12 @@ pub async fn analyze_token(
         symbol: overview_data.as_ref().and_then(|data| data.symbol.clone()),
         logo_uri: overview_data.as_ref().and_then(|data| data.logo_uri.clone()),
         price: price_data.as_ref().and_then(|data| data.value),
-        liquidity: overview_data.as_ref().and_then(|data| data.liquidity),
+        liquidity,
+        holder_metrics,
+        holder_risk,
+        liquidity_risk,
         data_sources,
-        message: "Basic token data fetched from available Birdeye sources".to_string(),
+        message: "Token analysis completed using available Birdeye sources.".to_string(),
     };
 
     Ok(Json(response))
