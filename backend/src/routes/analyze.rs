@@ -1,11 +1,16 @@
 use axum::{
-    Json, extract::State, http::StatusCode, response
+    Json, extract::State, http::StatusCode
 };
 
+use tokio::time::{sleep, Duration};
+
 use crate::{
-    birdeye::{errors::BirdeyeClientError, price},
+    birdeye::errors::BirdeyeClientError,
     types::{
-        api::{AnalyzeTokenRequest, AnalyzeTokenResponse, ApiErrorResponse, DataSourceStatus},
+        api::{
+            AnalyzeTokenRequest, AnalyzeTokenResponse, ApiErrorResponse, DataSourceStatus,
+            SourceProbeResponse,
+        },
         app::AppState,
     },
     utils::validation::validate_analyze_token_request,
@@ -22,6 +27,9 @@ pub async fn analyze_token(
         .birdeye_client
         .get_price(&payload.api_key, &payload.token_address)
         .await;
+
+    // Help with bypass 429 status code, when few request at the same second
+    sleep(Duration::from_secs(3)).await;
 
     let overview_result = app_state
         .birdeye_client
@@ -78,12 +86,50 @@ pub async fn analyze_token(
         symbol: overview_data.as_ref().and_then(|data| data.symbol.clone()),
         logo_uri: overview_data.as_ref().and_then(|data| data.logo_uri.clone()),
         price: price_data.as_ref().and_then(|data| data.value),
-        liquidity: price_data.as_ref().and_then(|data| data.liquidity),
+        liquidity: overview_data.as_ref().and_then(|data| data.liquidity),
         data_sources,
         message: "Basic token data fetched from available Birdeye sources".to_string(),
     };
 
     Ok(Json(response))
+}
+
+pub async fn probe_price(
+    State(app_state): State<AppState>,
+    Json(payload): Json<AnalyzeTokenRequest>,
+) -> Result<Json<SourceProbeResponse>, (StatusCode, Json<ApiErrorResponse>)> {
+    validate_analyze_token_request(&payload).map_err(validatation_error_response)?;
+
+    let result = app_state
+        .birdeye_client
+        .get_price(&payload.api_key, &payload.token_address)
+        .await;
+
+    Ok(Json(build_probe_response(
+        "price",
+        result.map(|response| response.data.is_some()),
+        &payload.token_address,
+        &payload.chain,
+    )))
+}
+
+pub async fn probe_overview(
+    State(app_state): State<AppState>,
+    Json(payload): Json<AnalyzeTokenRequest>,
+) -> Result<Json<SourceProbeResponse>, (StatusCode, Json<ApiErrorResponse>)> {
+    validate_analyze_token_request(&payload).map_err(validatation_error_response)?;
+
+    let result = app_state
+        .birdeye_client
+        .get_overview(&payload.api_key, &payload.token_address)
+        .await;
+
+    Ok(Json(build_probe_response(
+        "overview",
+        result.map(|response| response.data.is_some()),
+        &payload.token_address,
+        &payload.chain,
+    )))
 }
 
 fn validatation_error_response(message: &'static str) -> (StatusCode, Json<ApiErrorResponse>) {
@@ -116,6 +162,36 @@ fn format_birdeye_error(error: &BirdeyeClientError) -> String {
             "Failed to communicate with Birdeye or parse its response".to_string()
         }
     }        
+}
+
+fn build_probe_response(
+    source: &str,
+    result: Result<bool, BirdeyeClientError>,
+    token_address: &str,
+    chain: &str,
+) -> SourceProbeResponse {
+    match result {
+        Ok(has_data) => SourceProbeResponse {
+            source: source.to_string(),
+            status: "ok".to_string(),
+            detail: if has_data {
+                None
+            } else {
+                Some("Birdeye request succeeded but returned no data".to_string())
+            },
+            token_address: token_address.to_string(),
+            chain: chain.to_string(),
+            message: format!("Standalone {} probe completed", source),
+        },
+        Err(error) => SourceProbeResponse {
+            source: source.to_string(),
+            status: "error".to_string(),
+            detail: Some(format_birdeye_error(&error)),
+            token_address: token_address.to_string(),
+            chain: chain.to_string(),
+            message: format!("Standalone {} probe completed", source),
+        },
+    }
 }
 
 /*

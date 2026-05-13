@@ -1,20 +1,24 @@
 import { useState } from "react";
 import "./App.css";
-import { analyzeToken } from "./lib/api";
-import type { AnalyzeTokenResponse } from "./types/risk";
+import { analyzeToken, probeOverview, probePrice } from "./lib/api";
+import type { AnalyzeTokenResponse, SourceProbeResponse } from "./types/risk";
 
 function App() {
   const [apiKey, setApiKey] = useState("");
   const [tokenAddress, setTokenAddress] = useState("");
   const [report, setReport] = useState<AnalyzeTokenResponse | null>(null);
+  const [probeResult, setProbeResult] = useState<SourceProbeResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [activeRequest, setActiveRequest] = useState<
+    "analyze" | "price" | "overview" | null
+  >(null);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setIsLoading(true);
+    setActiveRequest("analyze");
     setError(null);
     setReport(null);
+    setProbeResult(null);
 
     try {
       const result = await analyzeToken({ apiKey, tokenAddress });
@@ -26,7 +30,30 @@ function App() {
         setError("Unexpected error while analyzing token");
       }
     } finally {
-      setIsLoading(false);
+      setActiveRequest(null);
+    }
+  }
+
+  async function handleProbe(source: "price" | "overview") {
+    setActiveRequest(source);
+    setError(null);
+    setProbeResult(null);
+
+    try {
+      const result =
+        source === "price"
+          ? await probePrice({ apiKey, tokenAddress })
+          : await probeOverview({ apiKey, tokenAddress });
+
+      setProbeResult(result);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError(`Unexpected error while probing ${source}`);
+      }
+    } finally {
+      setActiveRequest(null);
     }
   }
 
@@ -34,7 +61,7 @@ function App() {
     <main className="app-shell">
       <section className="hero">
         <p className="eyebrow">Solana Token Risk Lens</p>
-        <h1>Rust backend thinks. React UI shows.</h1>
+        <h1>Unsure about a token? Review the signals before you trade or interact.</h1>
         <p className="hero-copy">
           A decision-support dashboard for reviewing observable token risk
           signals from Birdeye data.
@@ -68,9 +95,31 @@ function App() {
             stored by the app.
           </p>
 
-          <button type="submit" disabled={isLoading}>
-            {isLoading ? "Analyzing..." : "Analyze token"}
-          </button>
+          <div className="button-row">
+            <button type="submit" disabled={activeRequest !== null}>
+              {activeRequest === "analyze" ? "Analyzing..." : "Analyze token"}
+            </button>
+
+            <button
+              type="button"
+              className="secondary-button"
+              disabled={activeRequest !== null}
+              onClick={() => void handleProbe("price")}
+            >
+              {activeRequest === "price" ? "Testing price..." : "Test price"}
+            </button>
+
+            <button
+              type="button"
+              className="secondary-button"
+              disabled={activeRequest !== null}
+              onClick={() => void handleProbe("overview")}
+            >
+              {activeRequest === "overview"
+                ? "Testing overview..."
+                : "Test overview"}
+            </button>
+          </div>
         </form>
       </section>
 
@@ -78,6 +127,35 @@ function App() {
         <section className="panel error-panel">
           <h2>Request error</h2>
           <p>{error}</p>
+        </section>
+      ) : null}
+
+      {probeResult ? (
+        <section className="panel">
+          <p className="eyebrow">Source probe</p>
+          <h2 className="probe-title">{probeResult.source}</h2>
+          <p className="helper-text">{probeResult.message}</p>
+
+          <div className="stats-grid">
+            <article className="stat-card">
+              <span>Status</span>
+              <strong>{probeResult.status}</strong>
+            </article>
+
+            <article className="stat-card">
+              <span>Chain</span>
+              <strong>{probeResult.chain}</strong>
+            </article>
+          </div>
+
+          {probeResult.detail ? (
+            <p className="helper-text">{probeResult.detail}</p>
+          ) : (
+            <p className="helper-text">
+              The standalone endpoint request completed without an upstream
+              error.
+            </p>
+          )}
         </section>
       ) : null}
 

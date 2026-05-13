@@ -43,3 +43,14 @@ pub struct DataSourceStatus {
 pub struct ApiErrorResponse {
     pub error: String,
 }
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SourceProbeResponse {
+    pub source: String,
+    pub status: String,
+    pub detail: Option<String>,
+    pub token_address: String,
+    pub chain: String,
+    pub message: String,
+}

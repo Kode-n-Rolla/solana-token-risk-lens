@@ -12,7 +12,10 @@ use tower_http::cors::CorsLayer;
 
 use crate::{
     birdeye::client::BirdeyeClient,
-    routes::{analyze::analyze_token, health::health},
+    routes::{
+        analyze::{analyze_token, probe_overview, probe_price},
+        health::health,
+    },
     types::app::AppState,
 };
 
@@ -25,6 +28,8 @@ async fn main() {
     let app = Router::new()
         .route("/health", get(health))
         .route("/api/analyze-token", post(analyze_token))
+        .route("/api/probe-price", post(probe_price))
+        .route("/api/probe-overview", post(probe_overview))
         .layer(CorsLayer::permissive())
         .with_state(app_state);
 
