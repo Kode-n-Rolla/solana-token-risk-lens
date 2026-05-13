@@ -12,7 +12,7 @@ use crate::{
         holders_risk::score_holder_concentration,
         liquidity_risk::score_liquidity_risk,
         momentum_risk::score_momentum_risk,
-        summary::{calculate_risk_index, risk_level_from_score},
+        summary::{self, calculate_risk_index, generate_analysis_summary, risk_level_from_score},
     },
     types::{
         api::{
@@ -157,6 +157,41 @@ pub async fn analyze_token(
 
     let risk_level = risk_level_from_score(risk_index);
 
+    let summary = generate_analysis_summary(
+        &risk_level,
+        holder_risk.as_ref(),
+        &liquidity_risk,
+        &momentum_risk,
+        &context_risk
+    );
+
+    let mut red_flags = Vec::new();
+
+    if let Some(holder_risk) = &holder_risk {
+        red_flags.extend(holder_risk.flags.clone());
+    }
+    red_flags.extend(liquidity_risk.flags.clone());
+    red_flags.extend(momentum_risk.flags.clone());
+    red_flags.extend(context_risk.flags.clone());
+
+    let mut manual_checks = vec![
+        "Verify the project's official website, X/Twitter, community channels, and documentation.".to_string(),
+        "Review top holders manually to distinguish exchanges, liquidity pools, lockers, burn addresses, and project-controlled wallets.".to_string(),
+        "Inspect liquidity conditions and recent trading activity before interacting with the token.".to_string(),
+    ];
+
+    if context_risk.score > 0 {
+        manual_checks.push(
+            "Because Birdeye returned limited public context, confirm whether the project has active and official public links.".to_string(),
+        );
+    }
+
+    if holder_risk.as_ref().map(|risk| risk.score > 0).unwrap_or(false) {
+        manual_checks.push(
+            "If holder concentration is elevated, investigate whether large wallets appear operational, exchange-related, or project-linked.".to_string(),
+        );
+    }
+
     let response = AnalyzeTokenResponse {
         token_address: payload.token_address,
         chain: payload.chain,
@@ -167,11 +202,14 @@ pub async fn analyze_token(
         liquidity,
         risk_index,
         risk_level,
+        summary,
         holder_metrics,
         holder_risk,
         liquidity_risk,
         momentum_risk,
         context_risk,
+        red_flags,
+        manual_checks,
         data_sources,
         message: "Token analysis completed using available Birdeye sources.".to_string(),
     };
