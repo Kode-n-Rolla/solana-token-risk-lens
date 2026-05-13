@@ -9,7 +9,7 @@ use crate::{
     types::{
         api::{
             AnalyzeTokenRequest, AnalyzeTokenResponse, ApiErrorResponse, DataSourceStatus,
-            SourceProbeResponse,
+            HoldersProbeResponse, SourceProbeResponse,
         },
         app::AppState,
     },
@@ -132,6 +132,54 @@ pub async fn probe_overview(
     )))
 }
 
+pub async fn probe_holders(
+    State(app_state): State<AppState>,
+    Json(payload): Json<AnalyzeTokenRequest>,
+) -> Result<Json<HoldersProbeResponse>, (StatusCode, Json<ApiErrorResponse>)> {
+    validate_analyze_token_request(&payload).map_err(validatation_error_response)?;
+
+    let result = app_state
+        .birdeye_client
+        .get_holders(
+            &payload.api_key,
+            &payload.token_address,
+            payload.options.holder_limit
+        )
+        .await;
+
+    let response = match result {
+        Ok(response) => {
+            let items = response.data.map(|data| data.items).unwrap_or_default();
+            let top_holder = items.first();
+
+            HoldersProbeResponse {
+                source: "holders".to_string(),
+                status: "ok".to_string(),
+                detail: None,
+                token_address: payload.token_address,
+                chain: payload.chain,
+                holder_count: items.len(),
+                top_holder_owner: top_holder.map(|holder| holder.owner.clone()),
+                top_holder_ui_amount: top_holder.map(|holder| holder.ui_amount),
+                message: "Standalone holders probe completed".to_string()
+            }
+        }
+        Err(error) => HoldersProbeResponse {
+            source: "holders".to_string(),
+            status: "error".to_string(),
+            detail: Some(format_birdeye_error(&error)),
+            token_address: payload.token_address,
+            chain: payload.chain,
+            holder_count: 0,
+            top_holder_owner: None,
+            top_holder_ui_amount: None,
+            message: "Standalone holders probe completed".to_string(),
+        }
+    };
+
+    Ok(Json(response))
+}
+
 fn validatation_error_response(message: &'static str) -> (StatusCode, Json<ApiErrorResponse>) {
     (
         StatusCode::BAD_REQUEST,
@@ -159,8 +207,11 @@ fn format_birdeye_error(error: &BirdeyeClientError) -> String {
             )
         }
         BirdeyeClientError::Request(_) => {
-            "Failed to communicate with Birdeye or parse its response".to_string()
+            format!("Failed to communicate with Birdeye or parse its response: {}", error)
         }
+        BirdeyeClientError::Json(error) => {
+            format!("Failed to decode Birdeye JSON: {}", error)
+        },
     }        
 }
 

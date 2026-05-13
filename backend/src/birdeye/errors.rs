@@ -13,4 +13,7 @@ pub enum BirdeyeClientError {
         endpoint: &'static str,
         status: reqwest::StatusCode,
     },
+
+    #[error("failed to decode Birdeye JSON: {0}")]
+    Json(#[from] serde_json::Error),
 }

@@ -70,10 +70,10 @@ pub struct HolderData {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct HolderItem {
     pub amount: String,
-    pub decimal: u8,
+    pub decimals: u8,
     pub mint: String,
     pub owner: String,
     pub token_account: String,

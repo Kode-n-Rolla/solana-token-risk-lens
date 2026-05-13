@@ -32,6 +32,7 @@ impl BirdeyeClient {
                 ("address", token_address),
                 ("offset", "0"),
                 ("limit", &limit.to_string()),
+                ("ui_amount_mode", "scaled"),
             ])
             .send()
             .await?;
@@ -43,7 +44,10 @@ impl BirdeyeClient {
             });
         }
 
-        let holders_response = response.json::<BirdeyeResponse<HolderData>>().await?;
+        //let holders_response = response.json::<BirdeyeResponse<HolderData>>().await?;
+        let raw_text = response.text().await?;
+        println!("holders raw response: {}", raw_text);
+        let holders_response = serde_json::from_str::<BirdeyeResponse<HolderData>>(&raw_text)?;
 
         Ok(holders_response)
     }
