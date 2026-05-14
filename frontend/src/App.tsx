@@ -1,6 +1,7 @@
 import { useState } from "react";
 import "./App.css";
 import { analyzeToken, probeOverview, probePrice } from "./lib/api";
+import { RiskSummary } from "./components/RiskSummary";
 import type { AnalyzeTokenResponse, SourceProbeResponse } from "./types/risk";
 
 function App() {
@@ -61,7 +62,7 @@ function App() {
     <main className="app-shell">
       <section className="hero">
         <p className="eyebrow">Solana Token Risk Lens</p>
-        <h1>Unsure about a token? Review the signals before you trade or interact.</h1>
+        <h1>Unsure about a token? Review the signals.</h1>
         <p className="hero-copy">
           A decision-support dashboard for reviewing observable token risk
           signals from Birdeye data.
@@ -86,7 +87,7 @@ function App() {
               type="text"
               value={tokenAddress}
               onChange={(event) => setTokenAddress(event.target.value)}
-              placeholder="So11111111111111111111111111111111111111112"
+              placeholder="DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263"
             />
           </label>
 
@@ -97,7 +98,14 @@ function App() {
 
           <div className="button-row">
             <button type="submit" disabled={activeRequest !== null}>
-              {activeRequest === "analyze" ? "Analyzing..." : "Analyze token"}
+              {activeRequest === "analyze" ? (
+                <span className="button-content">
+                  <span className="button-spinner" aria-hidden="true" />
+                  <span>Analyzing...</span>
+                </span>
+              ) : (
+                "Analyze token"
+              )}
             </button>
 
             <button
@@ -160,54 +168,116 @@ function App() {
       ) : null}
 
       {report ? (
-        <section className="panel report-panel">
-          <div className="report-header">
-            <div>
-              <p className="eyebrow">Basic token data</p>
-              <h2>{report.name ?? "Unknown token"}</h2>
-              <p>{report.symbol ?? "Symbol unavailable"}</p>
+        <>
+          <section className="panel report-panel">
+            <RiskSummary
+              name={report.name}
+              symbol={report.symbol}
+              logoUri={report.logoUri}
+              riskIndex={report.riskIndex}
+              riskLevel={report.riskLevel}
+              price={report.price}
+              liquidity={report.liquidity}
+              summary={report.summary}
+            />
+          </section>
+
+          <section className="panel">
+            <p className="eyebrow">Score breakdown</p>
+            <div className="breakdown-grid">
+              {report.breakdown.holders ? (
+                <article className="breakdown-card">
+                  <h3>Holders</h3>
+                  <p>
+                    {report.breakdown.holders.score}/
+                    {report.breakdown.holders.maxScore} ·{" "}
+                    {report.breakdown.holders.level}
+                  </p>
+                  <p>{report.breakdown.holders.summary}</p>
+                </article>
+              ) : null}
+
+              <article className="breakdown-card">
+                <h3>Liquidity</h3>
+                <p>
+                  {report.breakdown.liquidity.score}/
+                  {report.breakdown.liquidity.maxScore} ·{" "}
+                  {report.breakdown.liquidity.level}
+                </p>
+                <p>{report.breakdown.liquidity.summary}</p>
+              </article>
+
+              <article className="breakdown-card">
+                <h3>Momentum</h3>
+                <p>
+                  {report.breakdown.momentum.score}/
+                  {report.breakdown.momentum.maxScore} ·{" "}
+                  {report.breakdown.momentum.level}
+                </p>
+                <p>{report.breakdown.momentum.summary}</p>
+              </article>
+
+              <article className="breakdown-card">
+                <h3>Context</h3>
+                <p>
+                  {report.breakdown.context.score}/
+                  {report.breakdown.context.maxScore} ·{" "}
+                  {report.breakdown.context.level}
+                </p>
+                <p>{report.breakdown.context.summary}</p>
+              </article>
             </div>
+          </section>
 
-            {report.logoUri ? (
-              <img
-                className="token-logo"
-                src={report.logoUri}
-                alt={`${report.name ?? "Token"} logo`}
-              />
-            ) : null}
-          </div>
+          {report.holderMetrics ? (
+            <section className="panel">
+              <p className="eyebrow">Holder concentration</p>
+              <div className="stats-grid">
+                <article className="stat-card">
+                  <span>Top 1</span>
+                  <strong>{report.holderMetrics.top1Percent.toFixed(2)}%</strong>
+                </article>
 
-          <div className="stats-grid">
-            <article className="stat-card">
-              <span>Token address</span>
-              <strong>{report.tokenAddress}</strong>
-            </article>
+                <article className="stat-card">
+                  <span>Top 5</span>
+                  <strong>{report.holderMetrics.top5Percent.toFixed(2)}%</strong>
+                </article>
 
-            <article className="stat-card">
-              <span>Price</span>
-              <strong>
-                {report.price !== null ? report.price.toString() : "Unavailable"}
-              </strong>
-            </article>
+                <article className="stat-card">
+                  <span>Top 10</span>
+                  <strong>{report.holderMetrics.top10Percent.toFixed(2)}%</strong>
+                </article>
+              </div>
+            </section>
+          ) : null}
 
-            <article className="stat-card">
-              <span>Liquidity</span>
-              <strong>
-                {report.liquidity !== null
-                  ? report.liquidity.toString()
-                  : "Unavailable"}
-              </strong>
-            </article>
+          <section className="panel">
+            <p className="eyebrow">Red flags</p>
+            {report.redFlags.length > 0 ? (
+              <ul className="content-list">
+                {report.redFlags.map((flag) => (
+                  <li key={flag}>{flag}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="helper-text">
+                No major red flags were triggered by the current input data.
+              </p>
+            )}
+          </section>
 
-            <article className="stat-card">
-              <span>Chain</span>
-              <strong>{report.chain}</strong>
-            </article>
-          </div>
+          <section className="panel">
+            <p className="eyebrow">Manual checks</p>
+            <ul className="content-list">
+              {report.manualChecks.map((check) => (
+                <li key={check}>{check}</li>
+              ))}
+            </ul>
+          </section>
 
-          <div className="data-source-block">
-            <h3>Data sources</h3>
-            <ul>
+          <section className="panel">
+            <p className="eyebrow">Data sources</p>
+            <ul className="content-list">
               {report.dataSources.map((source) => (
                 <li key={source.source}>
                   <strong>{source.source}</strong>: {source.status}
@@ -215,10 +285,8 @@ function App() {
                 </li>
               ))}
             </ul>
-          </div>
-
-          <p className="helper-text">{report.message}</p>
-        </section>
+          </section>
+        </>
       ) : null}
     </main>
   );

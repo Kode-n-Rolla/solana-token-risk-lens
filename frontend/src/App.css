@@ -197,6 +197,66 @@ input {
   color: #e8dccd;
 }
 
+.report-summary {
+  margin: 0;
+  color: #f1e5d4;
+  line-height: 1.6;
+  font-size: 1.05rem;
+}
+
+.breakdown-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.breakdown-card {
+  background: rgba(255, 248, 240, 0.04);
+  border: 1px solid rgba(255, 220, 190, 0.12);
+  border-radius: 18px;
+  padding: 16px;
+}
+
+.breakdown-card h3 {
+  margin-top: 0;
+  margin-bottom: 8px;
+}
+
+.breakdown-card p {
+  margin: 0 0 8px;
+  color: #e7dac9;
+  line-height: 1.5;
+}
+
+.content-list {
+  margin: 0;
+  padding-left: 18px;
+  color: #e8dccd;
+  line-height: 1.6;
+}
+
+.button-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.button-spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(27, 18, 13, 0.18);
+  border-top-color: #1b120d;
+  border-radius: 999px;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @media (max-width: 720px) {
   .app-shell {
     padding: 28px 16px 48px;
@@ -213,5 +273,9 @@ input {
 
   .button-row {
     flex-direction: column;
+  }
+
+  .breakdown-grid {
+    grid-template-columns: 1fr;
   }
 }
