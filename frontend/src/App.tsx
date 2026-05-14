@@ -2,6 +2,7 @@ import { useState } from "react";
 import "./App.css";
 import { analyzeToken, probeOverview, probePrice } from "./lib/api";
 import { RiskSummary } from "./components/RiskSummary";
+import { ScoreBreakdown } from "./components/ScoreBreakdown";
 import type { AnalyzeTokenResponse, SourceProbeResponse } from "./types/risk";
 
 function App() {
@@ -184,49 +185,7 @@ function App() {
 
           <section className="panel">
             <p className="eyebrow">Score breakdown</p>
-            <div className="breakdown-grid">
-              {report.breakdown.holders ? (
-                <article className="breakdown-card">
-                  <h3>Holders</h3>
-                  <p>
-                    {report.breakdown.holders.score}/
-                    {report.breakdown.holders.maxScore} ·{" "}
-                    {report.breakdown.holders.level}
-                  </p>
-                  <p>{report.breakdown.holders.summary}</p>
-                </article>
-              ) : null}
-
-              <article className="breakdown-card">
-                <h3>Liquidity</h3>
-                <p>
-                  {report.breakdown.liquidity.score}/
-                  {report.breakdown.liquidity.maxScore} ·{" "}
-                  {report.breakdown.liquidity.level}
-                </p>
-                <p>{report.breakdown.liquidity.summary}</p>
-              </article>
-
-              <article className="breakdown-card">
-                <h3>Momentum</h3>
-                <p>
-                  {report.breakdown.momentum.score}/
-                  {report.breakdown.momentum.maxScore} ·{" "}
-                  {report.breakdown.momentum.level}
-                </p>
-                <p>{report.breakdown.momentum.summary}</p>
-              </article>
-
-              <article className="breakdown-card">
-                <h3>Context</h3>
-                <p>
-                  {report.breakdown.context.score}/
-                  {report.breakdown.context.maxScore} ·{" "}
-                  {report.breakdown.context.level}
-                </p>
-                <p>{report.breakdown.context.summary}</p>
-              </article>
-            </div>
+              <ScoreBreakdown breakdown={report.breakdown} />            
           </section>
 
           {report.holderMetrics ? (
