@@ -12,12 +12,12 @@ use crate::{
         holders_risk::score_holder_concentration,
         liquidity_risk::score_liquidity_risk,
         momentum_risk::score_momentum_risk,
-        summary::{self, calculate_risk_index, generate_analysis_summary, risk_level_from_score},
+        summary::{calculate_risk_index, generate_analysis_summary, risk_level_from_score},
     },
     types::{
         api::{
             AnalyzeTokenRequest, AnalyzeTokenResponse, ApiErrorResponse, DataSourceStatus,
-            HoldersProbeResponse, SourceProbeResponse,
+            HoldersProbeResponse, RiskBreakdown, SourceProbeResponse,
         },
         app::AppState,
     },
@@ -192,6 +192,13 @@ pub async fn analyze_token(
         );
     }
 
+    let breakdown = RiskBreakdown {
+        holders: holder_risk,
+        liquidity: liquidity_risk,
+        momentum: momentum_risk,
+        context: context_risk,
+    };
+
     let response = AnalyzeTokenResponse {
         token_address: payload.token_address,
         chain: payload.chain,
@@ -204,10 +211,7 @@ pub async fn analyze_token(
         risk_level,
         summary,
         holder_metrics,
-        holder_risk,
-        liquidity_risk,
-        momentum_risk,
-        context_risk,
+        breakdown,
         red_flags,
         manual_checks,
         data_sources,

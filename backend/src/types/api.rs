@@ -35,10 +35,7 @@ pub struct AnalyzeTokenResponse {
     pub risk_level: String,
     pub summary: String,
     pub holder_metrics: Option<HolderConcentrationMetrics>,
-    pub holder_risk: Option<RiskComponent>,
-    pub liquidity_risk: RiskComponent,
-    pub momentum_risk: RiskComponent,
-    pub context_risk: RiskComponent,
+    pub breakdown: RiskBreakdown,
     pub red_flags: Vec<String>,
     pub manual_checks: Vec<String>,
     pub data_sources: Vec<DataSourceStatus>,
@@ -86,4 +83,13 @@ pub struct HoldersProbeResponse {
     pub top10_percent: Option<f64>,
     pub risk_component: Option<RiskComponent>,
     pub message: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RiskBreakdown {
+    pub holders: Option<RiskComponent>,
+    pub liquidity: RiskComponent,
+    pub momentum: RiskComponent,
+    pub context: RiskComponent,
 }
