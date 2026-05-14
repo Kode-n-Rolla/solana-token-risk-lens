@@ -51,6 +51,16 @@ export function RiskSummary({
         </div>
       </div>
 
+      <p className="helper-text">
+        Risk Index uses a 0–100 scale. Higher scores indicate higher observable risk based on available Birdeye signals.
+      </p>
+
+      {name === null || symbol === null ? (
+        <p className="summary-warning">
+          Token name and symbol were not returned for this address. Verify the mint carefully, as limited metadata can indicate an incorrect or incomplete token reference.
+        </p>
+      ) : null}
+
       <div className="stats-grid">
         <article className="stat-card">
           <span>Price</span>

@@ -290,6 +290,17 @@ input {
   line-height: 1.4;
 }
 
+.summary-warning {
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(153, 69, 255, 0.08);
+  border: 1px solid rgba(153, 69, 255, 0.2);
+  color: #e7ecf7;
+  line-height: 1.5;
+}
+
+
 .disclaimer-panel {
   border-color: rgba(153, 69, 255, 0.24);
   background:
