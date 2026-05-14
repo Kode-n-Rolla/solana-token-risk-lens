@@ -123,12 +123,6 @@ input {
   gap: 12px;
 }
 
-.secondary-button {
-  background: rgba(10, 13, 20, 0.8) !important;
-  border: 1px solid rgba(153, 69, 255, 0.28) !important;
-  color: #e7ecf7 !important;
-}
-
 .helper-text {
   margin: 0;
   color: #b9c3d6;
@@ -184,6 +178,13 @@ input {
   padding: 16px;
 }
 
+.holder-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 24px 0 0;
+}
+
 .stat-card span {
   display: block;
   font-size: 0.9rem;
@@ -211,6 +212,23 @@ input {
   color: #eef4ff;
   line-height: 1.6;
   font-size: 1.05rem;
+}
+
+.report-stack {
+  display: grid;
+  gap: 0;
+  animation: report-fade-in 0.45s ease-out;
+}
+
+@keyframes report-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .breakdown-grid {
@@ -242,6 +260,41 @@ input {
   padding-left: 18px;
   color: #d7e7ff;
   line-height: 1.6;
+}
+
+.hero-risk-card {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 16px;
+  margin: 24px 0;
+  padding: 20px;
+  border-radius: 22px;
+  background:
+    linear-gradient(135deg, rgba(20, 241, 149, 0.12), rgba(153, 69, 255, 0.14)),
+    rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(124, 247, 212, 0.16);
+}
+
+.hero-risk-score {
+  font-size: clamp(3rem, 8vw, 5rem);
+  line-height: 0.9;
+  font-weight: 800;
+  color: #f4f7fb;
+}
+
+.hero-risk-level {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #dff7ff;
+  line-height: 1.4;
+}
+
+.disclaimer-panel {
+  border-color: rgba(153, 69, 255, 0.24);
+  background:
+    linear-gradient(135deg, rgba(153, 69, 255, 0.08), rgba(0, 194, 255, 0.05)),
+    rgba(10, 13, 20, 0.76);
 }
 
 .button-content {
@@ -285,6 +338,14 @@ input {
   }
 
   .breakdown-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .holder-metrics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-risk-card {
     grid-template-columns: 1fr;
   }
 }

@@ -1,15 +1,19 @@
-import { useState } from "react";
 import "./App.css";
-import { analyzeToken, probeOverview, probePrice } from "./lib/api";
+import { useState } from "react";
+import { analyzeToken } from "./lib/api";
 import { RiskSummary } from "./components/RiskSummary";
 import { ScoreBreakdown } from "./components/ScoreBreakdown";
-import type { AnalyzeTokenResponse, SourceProbeResponse } from "./types/risk";
+import { HolderMetrics } from "./components/HolderMetrics";
+import { RedFlags } from "./components/RedFlags";
+import { ManualChecks } from "./components/ManualChecks";
+import { DataSources } from "./components/DataSources";
+import { Disclaimer } from "./components/Disclaimer";
+import type { AnalyzeTokenResponse } from "./types/risk";
 
 function App() {
   const [apiKey, setApiKey] = useState("");
   const [tokenAddress, setTokenAddress] = useState("");
   const [report, setReport] = useState<AnalyzeTokenResponse | null>(null);
-  const [probeResult, setProbeResult] = useState<SourceProbeResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeRequest, setActiveRequest] = useState<
     "analyze" | "price" | "overview" | null
@@ -20,7 +24,6 @@ function App() {
     setActiveRequest("analyze");
     setError(null);
     setReport(null);
-    setProbeResult(null);
 
     try {
       const result = await analyzeToken({ apiKey, tokenAddress });
@@ -30,29 +33,6 @@ function App() {
         setError(err.message);
       } else {
         setError("Unexpected error while analyzing token");
-      }
-    } finally {
-      setActiveRequest(null);
-    }
-  }
-
-  async function handleProbe(source: "price" | "overview") {
-    setActiveRequest(source);
-    setError(null);
-    setProbeResult(null);
-
-    try {
-      const result =
-        source === "price"
-          ? await probePrice({ apiKey, tokenAddress })
-          : await probeOverview({ apiKey, tokenAddress });
-
-      setProbeResult(result);
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError(`Unexpected error while probing ${source}`);
       }
     } finally {
       setActiveRequest(null);
@@ -108,26 +88,6 @@ function App() {
                 "Analyze token"
               )}
             </button>
-
-            <button
-              type="button"
-              className="secondary-button"
-              disabled={activeRequest !== null}
-              onClick={() => void handleProbe("price")}
-            >
-              {activeRequest === "price" ? "Testing price..." : "Test price"}
-            </button>
-
-            <button
-              type="button"
-              className="secondary-button"
-              disabled={activeRequest !== null}
-              onClick={() => void handleProbe("overview")}
-            >
-              {activeRequest === "overview"
-                ? "Testing overview..."
-                : "Test overview"}
-            </button>
           </div>
         </form>
       </section>
@@ -139,113 +99,33 @@ function App() {
         </section>
       ) : null}
 
-      {probeResult ? (
-        <section className="panel">
-          <p className="eyebrow">Source probe</p>
-          <h2 className="probe-title">{probeResult.source}</h2>
-          <p className="helper-text">{probeResult.message}</p>
-
-          <div className="stats-grid">
-            <article className="stat-card">
-              <span>Status</span>
-              <strong>{probeResult.status}</strong>
-            </article>
-
-            <article className="stat-card">
-              <span>Chain</span>
-              <strong>{probeResult.chain}</strong>
-            </article>
-          </div>
-
-          {probeResult.detail ? (
-            <p className="helper-text">{probeResult.detail}</p>
-          ) : (
-            <p className="helper-text">
-              The standalone endpoint request completed without an upstream
-              error.
-            </p>
-          )}
-        </section>
-      ) : null}
-
       {report ? (
-        <>
-          <section className="panel report-panel">
-            <RiskSummary
-              name={report.name}
-              symbol={report.symbol}
-              logoUri={report.logoUri}
-              riskIndex={report.riskIndex}
-              riskLevel={report.riskLevel}
-              price={report.price}
-              liquidity={report.liquidity}
-              summary={report.summary}
-            />
-          </section>
+        <div className="report-stack">
+          <RiskSummary
+            name={report.name}
+            symbol={report.symbol}
+            logoUri={report.logoUri}
+            riskIndex={report.riskIndex}
+            riskLevel={report.riskLevel}
+            price={report.price}
+            liquidity={report.liquidity}
+            summary={report.summary}
+          />
 
-          <section className="panel">
-            <p className="eyebrow">Score breakdown</p>
-              <ScoreBreakdown breakdown={report.breakdown} />            
-          </section>
+          <ScoreBreakdown breakdown={report.breakdown} />            
 
           {report.holderMetrics ? (
-            <section className="panel">
-              <p className="eyebrow">Holder concentration</p>
-              <div className="stats-grid">
-                <article className="stat-card">
-                  <span>Top 1</span>
-                  <strong>{report.holderMetrics.top1Percent.toFixed(2)}%</strong>
-                </article>
-
-                <article className="stat-card">
-                  <span>Top 5</span>
-                  <strong>{report.holderMetrics.top5Percent.toFixed(2)}%</strong>
-                </article>
-
-                <article className="stat-card">
-                  <span>Top 10</span>
-                  <strong>{report.holderMetrics.top10Percent.toFixed(2)}%</strong>
-                </article>
-              </div>
-            </section>
+            <HolderMetrics metrics={report.holderMetrics} />
           ) : null}
 
-          <section className="panel">
-            <p className="eyebrow">Red flags</p>
-            {report.redFlags.length > 0 ? (
-              <ul className="content-list">
-                {report.redFlags.map((flag) => (
-                  <li key={flag}>{flag}</li>
-                ))}
-              </ul>
-            ) : (
-              <p className="helper-text">
-                No major red flags were triggered by the current input data.
-              </p>
-            )}
-          </section>
+          <RedFlags flags={report.redFlags}/>
 
-          <section className="panel">
-            <p className="eyebrow">Manual checks</p>
-            <ul className="content-list">
-              {report.manualChecks.map((check) => (
-                <li key={check}>{check}</li>
-              ))}
-            </ul>
-          </section>
+          <ManualChecks checks={report.manualChecks} />
 
-          <section className="panel">
-            <p className="eyebrow">Data sources</p>
-            <ul className="content-list">
-              {report.dataSources.map((source) => (
-                <li key={source.source}>
-                  <strong>{source.source}</strong>: {source.status}
-                  {source.detail ? ` - ${source.detail}` : ""}
-                </li>
-              ))}
-            </ul>
-          </section>
-        </>
+          <DataSources sources={report.dataSources} />
+
+          <Disclaimer />
+        </div>
       ) : null}
     </main>
   );

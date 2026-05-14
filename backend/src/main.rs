@@ -35,11 +35,11 @@ async fn main() {
         .layer(CorsLayer::permissive())
         .with_state(app_state);
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3001")
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:1984")
         .await
         .expect("failed to bind TCP listener");
 
-    println!("Backend listening on http://localhost:3001");
+    println!("Backend listening on http://localhost:1984");
 
     axum::serve(listener, app)
         .await

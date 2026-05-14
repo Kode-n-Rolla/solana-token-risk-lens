@@ -64,7 +64,7 @@ async function postJson<T>(
     };
   },
 ): Promise<T> {
-  const response = await fetch(`http://localhost:3001${path}`, {
+  const response = await fetch(`http://localhost:1984${path}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
