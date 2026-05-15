@@ -2,7 +2,7 @@ use reqwest::header::{HeaderMap, HeaderValue};
 
 use crate::{
     birdeye::errors::BirdeyeClientError,
-    types::{api, birdeye::{BirdeyeResponse, HolderData}},
+    types::birdeye::{BirdeyeResponse, HolderData},
 };
 
 use super::client::BirdeyeClient;

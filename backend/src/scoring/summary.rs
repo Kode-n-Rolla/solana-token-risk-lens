@@ -1,4 +1,4 @@
-use crate::{scoring::holders_risk, types::risk::RiskComponent};
+use crate::types::risk::RiskComponent;
 
 pub fn calculate_risk_index(
     holder_risk: Option<&RiskComponent>,
