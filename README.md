@@ -1,5 +1,13 @@
 # Solana Token Risk Lens
 
+![Rust](https://img.shields.io/badge/Rust-Backend-orange?logo=rust)
+![Axum](https://img.shields.io/badge/Axum-Web%20API-blue)
+![React](https://img.shields.io/badge/React-Frontend-61DAFB?logo=react&logoColor=black)
+![Vite](https://img.shields.io/badge/Vite-Build-646CFF?logo=vite&logoColor=white)
+![Solana](https://img.shields.io/badge/Solana-Token%20Risk%20Lens-14F195?logo=solana&logoColor=black)
+![Birdeye](https://img.shields.io/badge/Powered%20by-Birdeye%20Data-purple)
+![Release](https://img.shields.io/badge/release-v0.1.0-green)
+
 ## Overview
 
 Solana Token Risk Lens is a Rust-powered security-oriented dashboard for reviewing observable token risk signals before interacting with a Solana token.
