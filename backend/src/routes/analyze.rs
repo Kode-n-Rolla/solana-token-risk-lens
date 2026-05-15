@@ -24,6 +24,8 @@ use crate::{
     utils::validation::validate_analyze_token_request,
 };
 
+const REQUEST_DELAY_SECS: u64 = 1;
+
 
 pub async fn analyze_token(
     State(app_state): State<AppState>,
@@ -36,15 +38,16 @@ pub async fn analyze_token(
         .get_price(&payload.api_key, &payload.token_address)
         .await;
 
-    // Help with bypass 429 status code, when few request at the same second
-    sleep(Duration::from_secs(3)).await;
+    // Birdeye can return burst-related 429 responses when multiple upstream
+    // requests are sent too close together during a single analysis run.
+    sleep(Duration::from_secs(REQUEST_DELAY_SECS)).await;
 
     let overview_result = app_state
         .birdeye_client
         .get_overview(&payload.api_key, &payload.token_address)
         .await;
 
-    sleep(Duration::from_secs(2));
+    sleep(Duration::from_secs(REQUEST_DELAY_SECS)).await;
     
     let holders_result = app_state
         .birdeye_client
@@ -221,6 +224,7 @@ pub async fn analyze_token(
     Ok(Json(response))
 }
 
+//Separate functions per each requests
 pub async fn probe_price(
     State(app_state): State<AppState>,
     Json(payload): Json<AnalyzeTokenRequest>,
