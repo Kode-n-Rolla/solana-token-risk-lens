@@ -18,6 +18,9 @@ function App() {
   const [activeRequest, setActiveRequest] = useState<
     "analyze" | "price" | "overview" | null
   >(null);
+  const hasSourceIssues =
+  report?.dataSources.some((source) => source.status !== "ok") ?? false;
+
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -122,7 +125,7 @@ function App() {
 
           <ManualChecks checks={report.manualChecks} />
 
-          <DataSources sources={report.dataSources} />
+          {hasSourceIssues ? <DataSources sources={report.dataSources} /> : null }
 
           <Disclaimer />
         </div>
